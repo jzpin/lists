@@ -1,7 +1,7 @@
 // Second List version 
 // 1. Use Option as Link
 // 2. Generics
-// 3. 
+// 3. peek, peek_mut
 // 4.
 // 5.
 // public interface
@@ -43,6 +43,18 @@ impl <T> List<T> { // NOTE: only need <T> here, but both need follow impl and Li
         // map function of Option
         // pub fn map<U, F> (self, f: F) -> Option<U>
     }
+
+    pub fn peek(&self) -> Option<&T> {
+        self.head.as_ref().map(|node| { // as_ref() return Option<&T> which again has map
+            &node.elem
+        })
+    }
+
+    pub fn peek_mut(&mut self) -> Option<&mut T> {
+        self.head.as_mut().map(|node| { // as_ref() return Option<&T> which again has map
+            &mut node.elem
+        })
+    }
 }
 
 // drop to avoid recursive drop
@@ -53,4 +65,22 @@ impl <T> Drop for List<T> {
             cur_link = boxed_node.next.take();
         }
     }
+}
+
+#[test]
+fn peek() {
+    let mut list = List::new();
+    assert_eq!(list.peek(), None);
+    assert_eq!(list.peek_mut(), None);
+    list.push(1); list.push(2); list.push(3);
+
+    assert_eq!(list.peek(), Some(&3)); // return reference to 3!
+    assert_eq!(list.peek_mut(), Some(&mut 3));
+    // list.peek_mut().map(|&mut value| { // pattern matching
+    list.peek_mut().map(|value| {
+        *value = 42
+    });
+
+    assert_eq!(list.peek(), Some(&42));
+    assert_eq!(list.pop(), Some(42));
 }
