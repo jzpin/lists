@@ -3,8 +3,8 @@
 // 2. Generics [location of <T> for impl]
 // 3. peek [build test for peek_mut]
 // 4. IntoIter
-// 5. 
-// 6. 
+// 5. Iter [lifetime]
+// 6. IterMut
 // public interface
 pub struct List<T> {
     head: Link<T>, // actually TOP of stack, default private
@@ -68,6 +68,11 @@ impl <T> Drop for List<T> {
         }
     }
 }
+
+// iterator
+// lists::second::IntoIter
+// pub struct IntoIter<T>(List<T>); // new type! see vec::IntoIter
+
 
 #[cfg(test)]
 mod tests {
