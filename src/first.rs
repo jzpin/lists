@@ -1,4 +1,8 @@
 // First List version is a FILO stack
+// 1. mem
+// 2. Drop
+// 3. Self
+// 4. test [use super...]
 // public interface
 pub struct List {
     head: Link, // actually TOP of stack, default private

@@ -1,9 +1,10 @@
 // Second List version 
-// 1. Use Option as Link
-// 2. Generics
-// 3. 
-// 4.
-// 5.
+// 1. Use Option as Link [take & map]
+// 2. Generics [location of <T> for impl]
+// 3. peek [build test for peek_mut]
+// 4. IntoIter
+// 5. 
+// 6. 
 // public interface
 pub struct List<T> {
     head: Link<T>, // actually TOP of stack, default private
@@ -43,6 +44,19 @@ impl <T> List<T> { // NOTE: only need <T> here, but both need follow impl and Li
         // map function of Option
         // pub fn map<U, F> (self, f: F) -> Option<U>
     }
+
+    // add peek
+    pub fn peek(&self) -> Option<&T> {
+        self.head.as_ref().map(|node| {
+            &node.elem
+        })
+    }
+
+    pub fn peek_mut(&mut self) -> Option<&mut T> {
+        self.head.as_mut().map(|node| {
+            &mut node.elem
+        })
+    }
 }
 
 // drop to avoid recursive drop
@@ -52,5 +66,28 @@ impl <T> Drop for List<T> {
         while let Some(mut boxed_node) = cur_link {
             cur_link = boxed_node.next.take();
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::List;
+
+    #[test]
+    fn peek(){
+        let mut list = List::new();
+        assert_eq!(list.peek(), None);
+        assert_eq!(list.peek_mut(), None);
+        list.push(1); list.push(2); list.push(3);
+
+        assert_eq!(list.peek(), Some(&3));
+        assert_eq!(list.peek_mut(), Some(&mut 3));
+
+        list.peek_mut().map(|node|{
+            *node = 42
+        });
+
+        assert_eq!(list.peek(), Some(&42));
+        assert_eq!(list.pop(), Some(42));
     }
 }
