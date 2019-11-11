@@ -4,7 +4,7 @@
 // 3. peek [build test for peek_mut]
 // 4. IntoIter
 // 5. Iter [lifetime]
-// 6. IterMut
+// 6. IterMut [&mut -> take / copy]
 // public interface
 pub struct List<T> {
     head: Link<T>, // actually TOP of stack, default private
@@ -71,12 +71,110 @@ impl <T> Drop for List<T> {
 
 // iterator
 // lists::second::IntoIter
-// pub struct IntoIter<T>(List<T>); // new type! see vec::IntoIter
+pub struct IntoIter<T>(List<T>); // new type! see vec::IntoIter
+
+impl <T> List<T> {
+    pub fn into_iter(self) -> IntoIter<T> {
+        IntoIter(self) // move
+    }
+}
+
+impl <T> Iterator for IntoIter <T> {
+    type Item = T;
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.pop()
+    }
+}
+
+// iter
+pub struct Iter<'a, T> {
+    next: Option<&'a Node<T>>, // Option to reference of a node!
+}
+
+impl <T> List<T> {
+    pub fn iter(&self) -> Iter<T> {
+        Iter { next: self.head.as_ref().map(|node| &**node)} // way to improve?
+        // as_ref convert &Option<T> to Option<&T>, so node is &T, need one * to deref...
+        // T is Box<T>, so we need second *
+        // Then take & and return
+    }
+}
+
+// implement next for Iter
+impl <'a, T> Iterator for Iter<'a, T> {
+    type Item = &'a T;
+    fn next(&mut self) -> Option<Self::Item> {
+        self.next.take().map(|node| { // ok to not use take, because & is copy
+            self.next = node.next.as_ref().map(|node| &**node);
+            &node.elem
+        })
+    }
+}
+
+// mutable iterator
+pub struct IterMut <'a, T> {
+    next: Option<&'a mut Node<T>>,
+}
+
+impl<T> List<T> {
+    pub fn iter_mut(&mut self) -> IterMut<T> {
+        IterMut {
+            next: self.head.as_mut().map(|node| &mut **node)
+        }
+    }
+}
+
+impl<'a, T> Iterator for IterMut<'a, T> {
+    type Item = &'a mut T; 
+    fn next(&mut self) -> Option<Self::Item> {
+        // return option to &mut
+        self.next.take().map(|node| { // not as_mut
+            self.next = node.next.as_mut().map(|node| &mut **node);
+            &mut node.elem
+        })
+    }
+}
 
 
 #[cfg(test)]
 mod tests {
     use super::List;
+
+    #[test]
+    fn into_iter() {
+        let mut list = List::new();
+        list.push(1); list.push(2); list.push(3);
+        let mut itr = list.into_iter();
+        assert_eq!(itr.next(), Some(3));
+        assert_eq!(itr.next(), Some(2));
+        assert_eq!(itr.next(), Some(1));
+        assert_eq!(itr.next(), None);
+    }
+
+    #[test]
+    fn iter() {
+        let mut list = List::new();
+        list.push(1); list.push(2); list.push(3);
+        let mut itr = list.iter();
+        assert_eq!(itr.next(), Some(&3));
+        assert_eq!(itr.next(), Some(&2));
+        assert_eq!(itr.next(), Some(&1));
+    }
+
+    #[test]
+    fn iter_mut() {
+        let mut list = List::new();
+        list.push(1); list.push(2); list.push(3);
+        let mut itr = list.iter_mut();
+ 
+        let mut _a = &mut List::new(); // ok to make "_a" identifier mutable
+        _a.push(1);
+        _a = &mut List::new(); // assign to another List
+
+        assert_eq!(itr.next(), Some(&mut 3));
+        assert_eq!(itr.next(), Some(&mut 2));
+        assert_eq!(itr.next(), Some(&mut 1));
+    }
 
     #[test]
     fn peek(){
